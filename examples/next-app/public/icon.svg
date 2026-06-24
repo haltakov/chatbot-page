@@ -1,0 +1,17 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="v-bg" x1="34" y1="22" x2="148" y2="156" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB" />
+      <stop offset="0.52" stop-color="#14B8A6" />
+      <stop offset="1" stop-color="#F59E0B" />
+    </linearGradient>
+    <linearGradient id="v-shine" x1="52" y1="28" x2="120" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.42" />
+      <stop offset="1" stop-color="white" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <circle cx="90" cy="90" r="78" fill="url(#v-bg)" />
+  <circle cx="90" cy="90" r="77" stroke="white" stroke-opacity="0.22" stroke-width="2" />
+  <path d="M47 58L82.5 123C85.7 128.8 94.3 128.8 97.5 123L133 58" stroke="white" stroke-width="19" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M53 38C66 29 83 24 100 26C79 36 63 51 52 71C48 58 48 47 53 38Z" fill="url(#v-shine)" />
+</svg>

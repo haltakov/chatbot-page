@@ -1,0 +1,23 @@
+{
+  "name": "chatbot-page-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter chatbot-page build && pnpm --parallel --filter chatbot-page --filter example-next dev",
+    "typecheck": "pnpm --filter chatbot-page build && pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ],
+    "overrides": {
+      "hono": "4.12.25"
+    }
+  }
+}
