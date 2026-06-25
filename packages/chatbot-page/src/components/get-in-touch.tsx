@@ -4,6 +4,7 @@ import { type ComponentType, type FormEvent, useEffect, useRef, useState } from 
 import { createPortal } from "react-dom"
 import { Mail, X, Check, Loader2 } from "lucide-react"
 import { BotAvatar } from "./bot-avatar"
+import { useFocusTrap } from "../lib/use-focus-trap"
 import type { BotAvatarProps, ChatbotContactConfig, ChatbotIdentity } from "../types"
 
 function isValidEmail(email: string) {
@@ -28,6 +29,7 @@ export function GetInTouch({
   const [submitting, setSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useFocusTrap<HTMLDivElement>(open && mounted)
 
   useEffect(() => setMounted(true), [])
 
@@ -107,7 +109,7 @@ export function GetInTouch({
             aria-hidden="true"
           />
 
-          <div className="cp-modal-panel">
+          <div ref={panelRef} tabIndex={-1} className="cp-modal-panel">
             <button
               type="button"
               onClick={close}

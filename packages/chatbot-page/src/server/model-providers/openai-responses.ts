@@ -64,7 +64,10 @@ export function createOpenAIResponsesProvider({
             model,
             instructions,
             input: includeConversationHistory
-              ? toOpenAIInput(request.messages, request.message, maxHistoryMessages)
+              ? toOpenAIInput(request.messages, request.message, {
+                  maxHistoryMessages,
+                  previousResponseId: request.previousResponseId,
+                })
               : request.message,
             previous_response_id: request.previousResponseId,
             stream: true,
@@ -115,17 +118,34 @@ function compactObject<T extends Record<string, unknown>>(value: T): T {
   ) as T
 }
 
+type OpenAIInputMessage = {
+  role: "user" | "assistant"
+  content: string
+}
+
 function toOpenAIInput(
   messages: ChatbotServerMessage[],
   fallbackMessage: string,
-  maxHistoryMessages: number,
-): string {
-  const history = messages.length > 0 ? messages : [{ role: "user" as const, content: fallbackMessage }]
-  const selected = history.slice(-maxHistoryMessages)
+  options: {
+    maxHistoryMessages: number
+    previousResponseId?: string
+  },
+): string | OpenAIInputMessage[] {
+  // When a server-side thread is referenced via previous_response_id, OpenAI
+  // already has the prior turns — re-sending them duplicates context and cost,
+  // so we send only the new user turn.
+  if (options.previousResponseId) {
+    const latestUser = [...messages].reverse().find((message) => message.role === "user")
+    return latestUser?.content ?? fallbackMessage
+  }
 
-  return selected
-    .map((message) => `${message.role === "assistant" ? "Assistant" : "User"}: ${message.content}`)
-    .join("\n\n")
+  const history = messages.length > 0 ? messages : [{ role: "user" as const, content: fallbackMessage }]
+
+  // Preserve roles as structured input instead of flattening to a single string.
+  return history.slice(-options.maxHistoryMessages).map((message) => ({
+    role: message.role,
+    content: message.content,
+  }))
 }
 
 async function* readOpenAISseStream(body: ReadableStream<Uint8Array>): ChatbotServerAnswerStream {

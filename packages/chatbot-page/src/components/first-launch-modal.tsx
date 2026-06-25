@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { MessageCircle, X } from "lucide-react"
 import { Markdown } from "./markdown"
+import { useFocusTrap } from "../lib/use-focus-trap"
 import type { ChatbotKeyValueStore } from "../lib/chat-store"
 import type { ChatbotFirstLaunchConfig, ChatbotIdentity } from "../types"
 
@@ -13,7 +14,8 @@ function getFirstName(name: string): string {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
-  return (parts[0]?.[0] ?? "C") + (parts[1]?.[0] ?? "")
+  if (parts.length === 0) return "?"
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase()
 }
 
 export function FirstLaunchModal({
@@ -29,6 +31,7 @@ export function FirstLaunchModal({
 }) {
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
+  const panelRef = useFocusTrap<HTMLDivElement>(open)
 
   useEffect(() => {
     let cancelled = false
@@ -70,7 +73,7 @@ export function FirstLaunchModal({
       aria-labelledby="cp-first-launch-title"
     >
       <div className="cp-modal-backdrop cp-first-launch-backdrop" onClick={close} aria-hidden="true" />
-      <div className="cp-first-launch-panel">
+      <div ref={panelRef} tabIndex={-1} className="cp-first-launch-panel">
         <button
           type="button"
           onClick={close}

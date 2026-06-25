@@ -22,6 +22,10 @@ import type {
   ChatbotPromptSource,
 } from "../types"
 
+// Conversations change on every streamed token; debounce persistence so a long
+// answer is written once it settles instead of once per token.
+const SAVE_DEBOUNCE_MS = 400
+
 function makeMessage(role: Message["role"], content: string): Message {
   return { id: uid(), role, content, createdAt: Date.now() }
 }
@@ -68,6 +72,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   // Load from storage (or seed a fresh intro chat) on mount.
   useEffect(() => {
@@ -94,12 +99,33 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     }
   }, [config.introMessage, config.storage.conversationStore])
 
-  // Persist whenever conversations change.
+  // Persist conversations, debounced so a streamed answer is written once it
+  // settles rather than once per token. `pendingSaveRef` holds the latest
+  // unsaved value so we can flush it on unmount.
+  const pendingSaveRef = useRef<Conversation[] | null>(null)
+  const storeRef = useRef(config.storage.conversationStore)
+  storeRef.current = config.storage.conversationStore
+
   useEffect(() => {
-    if (hydrated) {
-      void config.storage.conversationStore.save(conversations)
-    }
+    if (!hydrated) return
+    pendingSaveRef.current = conversations
+    const store = config.storage.conversationStore
+    const handle = window.setTimeout(() => {
+      pendingSaveRef.current = null
+      void store.save(conversations)
+    }, SAVE_DEBOUNCE_MS)
+    return () => window.clearTimeout(handle)
   }, [config.storage.conversationStore, conversations, hydrated])
+
+  // On unmount, flush any pending save and cancel any in-flight answer.
+  useEffect(() => {
+    return () => {
+      if (pendingSaveRef.current) {
+        void storeRef.current.save(pendingSaveRef.current)
+      }
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const active = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
@@ -124,7 +150,14 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     [],
   )
 
+  // Abort an in-flight answer (e.g. when the user moves to another chat).
+  const cancelActiveAnswer = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+  }, [])
+
   const handleNewChat = useCallback(() => {
+    cancelActiveAnswer()
     const convo = newChatWithIntro(config.introMessage)
     setConversations((prev) => [convo, ...prev])
     setActiveId(convo.id)
@@ -132,18 +165,23 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     setStreamingId(null)
     setThinking(false)
     setSidebarOpen(false)
-  }, [config.introMessage])
+  }, [cancelActiveAnswer, config.introMessage])
 
-  const handleSelect = useCallback((id: string) => {
-    setActiveId(id)
-    setAnimatingId(null)
-    setStreamingId(null)
-    setThinking(false)
-    setSidebarOpen(false)
-  }, [])
+  const handleSelect = useCallback(
+    (id: string) => {
+      cancelActiveAnswer()
+      setActiveId(id)
+      setAnimatingId(null)
+      setStreamingId(null)
+      setThinking(false)
+      setSidebarOpen(false)
+    },
+    [cancelActiveAnswer],
+  )
 
   const handleDelete = useCallback(
     (id: string) => {
+      if (id === activeId) cancelActiveAnswer()
       setConversations((prev) => {
         const next = prev.filter((c) => c.id !== id)
         if (id === activeId) {
@@ -160,7 +198,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
         return next
       })
     },
-    [activeId, config.introMessage],
+    [activeId, cancelActiveAnswer, config.introMessage],
   )
 
   const sendMessage = useCallback(
@@ -175,6 +213,8 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
       const userMsg = makeMessage("user", text)
       const convoId = active.id
       const isFirstUserMessage = !active.messages.some((m) => m.role === "user")
+      const controller = new AbortController()
+      abortRef.current = controller
 
       void sendChatbotNotification(config, {
         type: "prompt",
@@ -197,6 +237,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
       // Simulate an instant-but-perceptible response while still supporting async providers.
       window.setTimeout(() => {
         void (async () => {
+          if (controller.signal.aborted) return
           let streamingMessageId: string | null = null
           const conversationForProvider = {
             ...active,
@@ -210,30 +251,39 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               conversation: conversationForProvider,
               messages: conversationForProvider.messages,
               suggestions: config.suggestions,
+              signal: controller.signal,
             })
+
+            if (controller.signal.aborted) return
 
             if (isStreamingAnswer(answer)) {
               const botMsg = makeMessage("assistant", "")
               streamingMessageId = botMsg.id
+              if (controller.signal.aborted) return
               updateConversation(convoId, (c) => ({
                 ...c,
                 messages: [...c.messages, botMsg],
                 updatedAt: Date.now(),
               }))
+              if (controller.signal.aborted) return
               setThinking(false)
               setStreamingId(botMsg.id)
 
               let receivedText = false
               for await (const chunk of answer.stream) {
+                if (controller.signal.aborted) return
                 const delta = chunkToText(chunk)
                 if (!delta) continue
                 receivedText = true
+                if (controller.signal.aborted) return
                 updateConversation(convoId, (c) => ({
                   ...c,
                   messages: appendToMessage(c.messages, botMsg.id, delta),
                   updatedAt: Date.now(),
                 }))
               }
+
+              if (controller.signal.aborted) return
 
               if (!receivedText) {
                 updateConversation(convoId, (c) => ({
@@ -250,6 +300,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               return
             }
 
+            if (controller.signal.aborted) return
             const botMsg = makeMessage("assistant", answerToContent(answer))
             updateConversation(convoId, (c) => ({
               ...c,
@@ -258,6 +309,8 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
             }))
             setAnimatingId(botMsg.id)
           } catch (error) {
+            // The user navigated away from this answer; leave it as-is.
+            if (controller.signal.aborted) return
             const message =
               error instanceof Error
                 ? `I couldn't answer that yet: ${error.message}`
@@ -285,8 +338,12 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               setAnimatingId(botMsg.id)
             }
           } finally {
-            setThinking(false)
-            setStreamingId(null)
+            if (abortRef.current === controller) abortRef.current = null
+            // If aborted, whatever handler triggered it already reset UI state.
+            if (!controller.signal.aborted) {
+              setThinking(false)
+              setStreamingId(null)
+            }
           }
         })()
       }, config.ui.responseDelayMs)

@@ -1,3 +1,5 @@
+import type { ChatbotAnswerChunk, ChatbotAnswerStream } from "../shared"
+
 export type ChatbotServerMessage = {
   id?: string
   role: "user" | "assistant"
@@ -11,25 +13,11 @@ export type ChatbotServerRequest = {
   previousResponseId?: string
 }
 
-export type ChatbotServerAnswerChunk =
-  | string
-  | {
-      type: "text-delta"
-      text: string
-    }
-  | {
-      type: "metadata"
-      [key: string]: unknown
-    }
-  | {
-      type: "done"
-    }
-  | {
-      type: "error"
-      error: string
-    }
+// The client and server speak the same answer-chunk protocol; these aliases
+// keep the server-facing names while sharing a single definition.
+export type ChatbotServerAnswerChunk = ChatbotAnswerChunk
 
-export type ChatbotServerAnswerStream = AsyncIterable<ChatbotServerAnswerChunk>
+export type ChatbotServerAnswerStream = ChatbotAnswerStream
 
 export type ChatbotModelProvider = {
   streamAnswer(request: ChatbotServerRequest): ChatbotServerAnswerStream | Promise<ChatbotServerAnswerStream>

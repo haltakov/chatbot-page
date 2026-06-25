@@ -1,7 +1,23 @@
 import { ChatbotRequestError } from "./errors"
 import type { ChatbotServerMessage, ChatbotServerRequest } from "./types"
 
-export async function readChatbotRequest(request: Request): Promise<ChatbotServerRequest> {
+export type ReadChatbotRequestOptions = {
+  /** Reject messages longer than this many characters (default 4000). */
+  maxMessageLength?: number
+  /** Keep at most this many history messages (default 50). */
+  maxMessages?: number
+}
+
+const DEFAULT_MAX_MESSAGE_LENGTH = 4000
+const DEFAULT_MAX_MESSAGES = 50
+
+export async function readChatbotRequest(
+  request: Request,
+  options: ReadChatbotRequestOptions = {},
+): Promise<ChatbotServerRequest> {
+  const maxMessageLength = options.maxMessageLength ?? DEFAULT_MAX_MESSAGE_LENGTH
+  const maxMessages = options.maxMessages ?? DEFAULT_MAX_MESSAGES
+
   let payload: Record<string, unknown>
 
   try {
@@ -18,10 +34,13 @@ export async function readChatbotRequest(request: Request): Promise<ChatbotServe
         : ""
 
   if (!message) throw new ChatbotRequestError("Missing message.")
+  if (message.length > maxMessageLength) {
+    throw new ChatbotRequestError(`Message exceeds the ${maxMessageLength}-character limit.`)
+  }
 
   return {
     message,
-    messages: readMessages(payload.messages),
+    messages: readMessages(payload.messages, maxMessages, maxMessageLength),
     previousResponseId:
       typeof payload.previousResponseId === "string"
         ? payload.previousResponseId
@@ -31,14 +50,19 @@ export async function readChatbotRequest(request: Request): Promise<ChatbotServe
   }
 }
 
-function readMessages(value: unknown): ChatbotServerMessage[] {
+function readMessages(
+  value: unknown,
+  maxMessages: number,
+  maxMessageLength: number,
+): ChatbotServerMessage[] {
   if (!Array.isArray(value)) return []
 
-  return value.flatMap((message): ChatbotServerMessage[] => {
+  // Keep only the most recent messages so a client can't send unbounded history.
+  return value.slice(-maxMessages).flatMap((message): ChatbotServerMessage[] => {
     if (!message || typeof message !== "object") return []
     const data = message as Record<string, unknown>
     const role = data.role === "assistant" ? "assistant" : data.role === "user" ? "user" : null
-    const content = typeof data.content === "string" ? data.content : ""
+    const content = typeof data.content === "string" ? data.content.slice(0, maxMessageLength) : ""
 
     if (!role || !content) return []
 

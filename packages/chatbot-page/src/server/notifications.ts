@@ -1,23 +1,11 @@
 import { ChatbotRequestError } from "./errors"
+import type { ChatbotNotificationEvent } from "../shared"
 
-export type ChatbotServerNotificationEvent =
-  | {
-      type: "prompt"
-      visitorId: string
-      prompt: string
-      source: "composer" | "suggestion"
-      suggestionId?: string
-      conversationId?: string
-      url?: string
-      createdAt: string
-    }
-  | {
-      type: "contact"
-      visitorId: string
-      email: string
-      url?: string
-      createdAt: string
-    }
+// The notification payload is identical on both sides of the wire; the server
+// keeps its own name but shares the definition.
+export type ChatbotServerNotificationEvent = ChatbotNotificationEvent
+
+const MAX_PROMPT_LENGTH = 4000
 
 export type ChatbotServerNotifier = {
   send(event: ChatbotServerNotificationEvent): Promise<void>
@@ -43,7 +31,7 @@ export async function readChatbotEventRequest(request: Request): Promise<Chatbot
     return {
       type,
       visitorId,
-      prompt: readRequiredString(payload.prompt, "prompt"),
+      prompt: readRequiredString(payload.prompt, "prompt").slice(0, MAX_PROMPT_LENGTH),
       source: payload.source === "suggestion" ? "suggestion" : "composer",
       suggestionId: readOptionalString(payload.suggestionId),
       conversationId: readOptionalString(payload.conversationId),

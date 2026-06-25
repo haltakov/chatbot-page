@@ -5,6 +5,20 @@ import type {
   Conversation,
   Message,
 } from "./lib/chat-store"
+import type {
+  ChatbotAnswerChunk,
+  ChatbotAnswerStream,
+  ChatbotNotificationEvent,
+  ChatbotPromptSource,
+} from "./shared"
+
+// Re-export the shared protocol types so the public API surface is unchanged.
+export type {
+  ChatbotAnswerChunk,
+  ChatbotAnswerStream,
+  ChatbotNotificationEvent,
+  ChatbotPromptSource,
+}
 
 export type ChatbotIdentity = {
   name: string
@@ -21,27 +35,9 @@ export type ChatbotAnswerContext = {
   conversation: Conversation
   messages: Message[]
   suggestions: ChatbotSuggestion[]
+  /** Aborted when the user navigates away from the in-flight answer. */
+  signal?: AbortSignal
 }
-
-export type ChatbotAnswerChunk =
-  | string
-  | {
-      type: "text-delta"
-      text: string
-    }
-  | {
-      type: "metadata"
-      [key: string]: unknown
-    }
-  | {
-      type: "done"
-    }
-  | {
-      type: "error"
-      error: string
-    }
-
-export type ChatbotAnswerStream = AsyncIterable<ChatbotAnswerChunk>
 
 export type ChatbotAnswerResult =
   | string
@@ -86,27 +82,6 @@ export type ChatbotFirstLaunchConfig = {
   highlights?: string[]
   dismissLabel?: string
 }
-
-export type ChatbotPromptSource = "composer" | "suggestion"
-
-export type ChatbotNotificationEvent =
-  | {
-      type: "prompt"
-      visitorId: string
-      prompt: string
-      source: ChatbotPromptSource
-      suggestionId?: string
-      conversationId?: string
-      url?: string
-      createdAt: string
-    }
-  | {
-      type: "contact"
-      visitorId: string
-      email: string
-      url?: string
-      createdAt: string
-    }
 
 export type ChatbotNotificationInput =
   | {

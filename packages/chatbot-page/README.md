@@ -147,6 +147,39 @@ const modelProvider = {
 }
 ```
 
+## Rate limiting and input limits
+
+`readChatbotRequest` caps message length and history size, and `createRateLimiter`
+provides a simple per-instance limiter. Both throw `ChatbotRequestError`, which
+`createChatbotErrorResponse` turns into the right status (`400`/`429`):
+
+```ts
+import {
+  createChatbotErrorResponse,
+  createChatbotSseResponse,
+  createRateLimiter,
+  getClientIp,
+  readChatbotRequest,
+} from "chatbot-page/server"
+
+const limiter = createRateLimiter({ limit: 20, windowMs: 60_000, maxKeys: 10_000 })
+
+export async function POST(request: Request) {
+  try {
+    limiter.check(getClientIp(request))
+    const chatRequest = await readChatbotRequest(request, { maxMessageLength: 4000 })
+    return createChatbotSseResponse(modelProvider.streamAnswer(chatRequest))
+  } catch (error) {
+    return createChatbotErrorResponse(error)
+  }
+}
+```
+
+The limiter keeps bounded state in memory, so it only protects a single
+instance. On serverless/multi-instance deployments, back it with a shared store
+(Redis, Upstash, etc.). `getClientIp` reads common proxy headers, so only use it
+when those headers are controlled by your deployment platform or trusted proxy.
+
 ## Notifications
 
 Notifications are provider-based. The built-in API provider posts events to your route:

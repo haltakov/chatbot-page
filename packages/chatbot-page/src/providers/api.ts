@@ -24,6 +24,7 @@ export function createApiAnswerProvider({
         message: input,
         messages: context.messages,
       }),
+      signal: context.signal,
     })
 
     if (!response.ok) {

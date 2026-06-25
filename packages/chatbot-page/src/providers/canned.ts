@@ -65,6 +65,16 @@ export function createCannedAnswerProvider({
   keywordMap = [],
   suggestions = [],
 }: CannedAnswerProviderOptions): ChatbotAnswerProvider {
+  // Precompile a boundary-aware matcher per keyword so short keywords like "ai"
+  // don't accidentally match substrings, while still supporting non-ASCII text.
+  const compiledKeywordMap = keywordMap.map(({ id, words }) => ({
+    id,
+    patterns: words
+      .map((word) => word.trim().toLowerCase())
+      .filter(Boolean)
+      .map(buildKeywordMatcher),
+  }))
+
   return async (input: string, context: ChatbotAnswerContext) => {
     const text = input.trim().toLowerCase()
     const suggestionList = suggestions.length > 0 ? suggestions : context.suggestions
@@ -72,12 +82,25 @@ export function createCannedAnswerProvider({
     const byQuestion = suggestionList.find((s) => s.question.toLowerCase() === text)
     if (byQuestion && answers[byQuestion.id]) return answers[byQuestion.id]
 
-    for (const { id, words } of keywordMap) {
-      if (words.some((word) => text.includes(word)) && answers[id]) {
+    for (const { id, patterns } of compiledKeywordMap) {
+      if (patterns.some((pattern) => pattern.test(text)) && answers[id]) {
         return answers[id]
       }
     }
 
     return fallbackProvider ? fallbackProvider(input, context) : fallbackAnswer
   }
+}
+
+const KEYWORD_BOUNDARY = "[^\\p{L}\\p{N}_]"
+
+function buildKeywordMatcher(word: string): RegExp {
+  return new RegExp(
+    `(^|${KEYWORD_BOUNDARY})${escapeRegExp(word)}(?=$|${KEYWORD_BOUNDARY})`,
+    "iu",
+  )
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
