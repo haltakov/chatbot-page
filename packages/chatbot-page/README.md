@@ -82,6 +82,11 @@ const answerProvider = createCannedAnswerProvider({
 })
 ```
 
+By default, canned answers are only used when a visitor clicks a suggested
+question. Typed questions fall through to the fallback provider, even if they
+match a canned question or keyword. If you want the old behavior for another
+site, opt in with `matchInput: true`.
+
 ## First Launch Modal
 
 Show a one-time explanation modal with `ui.firstLaunch`. The seen state is stored through the configured key-value store:

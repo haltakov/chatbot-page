@@ -27,6 +27,8 @@ export type CannedAnswerProviderOptions = {
   fallbackAnswer?: string
   fallbackProvider?: ChatbotAnswerProvider
   keywordMap?: KeywordMatch[]
+  /** Also match typed composer input by exact question/keyword. Defaults to false. */
+  matchInput?: boolean
   suggestions?: ChatbotSuggestion[]
 }
 
@@ -63,6 +65,7 @@ export function createCannedAnswerProvider({
   fallbackAnswer = "I do not have a pre-written answer for that yet.",
   fallbackProvider,
   keywordMap = [],
+  matchInput = false,
   suggestions = [],
 }: CannedAnswerProviderOptions): ChatbotAnswerProvider {
   // Precompile a boundary-aware matcher per keyword so short keywords like "ai"
@@ -79,12 +82,23 @@ export function createCannedAnswerProvider({
     const text = input.trim().toLowerCase()
     const suggestionList = suggestions.length > 0 ? suggestions : context.suggestions
 
-    const byQuestion = suggestionList.find((s) => s.question.toLowerCase() === text)
-    if (byQuestion && answers[byQuestion.id]) return answers[byQuestion.id]
+    if (context.source === "suggestion") {
+      if (context.suggestionId && answers[context.suggestionId]) {
+        return answers[context.suggestionId]
+      }
 
-    for (const { id, patterns } of compiledKeywordMap) {
-      if (patterns.some((pattern) => pattern.test(text)) && answers[id]) {
-        return answers[id]
+      const byQuestion = suggestionList.find((s) => s.question.toLowerCase() === text)
+      if (byQuestion && answers[byQuestion.id]) return answers[byQuestion.id]
+    }
+
+    if (matchInput) {
+      const byQuestion = suggestionList.find((s) => s.question.toLowerCase() === text)
+      if (byQuestion && answers[byQuestion.id]) return answers[byQuestion.id]
+
+      for (const { id, patterns } of compiledKeywordMap) {
+        if (patterns.some((pattern) => pattern.test(text)) && answers[id]) {
+          return answers[id]
+        }
       }
     }
 

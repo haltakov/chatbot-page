@@ -251,6 +251,8 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               conversation: conversationForProvider,
               messages: conversationForProvider.messages,
               suggestions: config.suggestions,
+              source: options.source ?? "composer",
+              suggestionId: options.suggestionId,
               signal: controller.signal,
             })
 

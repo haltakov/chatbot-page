@@ -35,6 +35,8 @@ export type ChatbotAnswerContext = {
   conversation: Conversation
   messages: Message[]
   suggestions: ChatbotSuggestion[]
+  source: ChatbotPromptSource
+  suggestionId?: string
   /** Aborted when the user navigates away from the in-flight answer. */
   signal?: AbortSignal
 }
