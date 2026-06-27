@@ -1,9 +1,31 @@
 {
   "name": "chatbot-page",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A configurable chatbot-style page for personal sites, company pages, and LLM-backed Q&A.",
   "type": "module",
   "license": "MIT",
+  "author": "Vladimir Haltakov",
+  "homepage": "https://github.com/haltakov/chatbot-page#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haltakov/chatbot-page.git",
+    "directory": "packages/chatbot-page"
+  },
+  "bugs": {
+    "url": "https://github.com/haltakov/chatbot-page/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "chatbot",
+    "personal-website",
+    "react",
+    "nextjs",
+    "rag",
+    "llm",
+    "portfolio"
+  ],
   "sideEffects": [
     "./dist/styles.css"
   ],
@@ -21,10 +43,15 @@
     },
     "./styles.css": "./dist/styles.css"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
-    "build": "tsup src/index.ts src/server/index.ts --format esm --dts --sourcemap --clean && cp src/styles.css dist/styles.css",
-    "dev": "tsup src/index.ts src/server/index.ts --format esm --dts --sourcemap --watch --onSuccess \"cp src/styles.css dist/styles.css\"",
-    "prepack": "pnpm build",
+    "build": "tsup src/index.ts src/server/index.ts --format esm --sourcemap --clean && tsc -p tsconfig.json && cp src/styles.css dist/styles.css",
+    "dev": "tsup src/index.ts src/server/index.ts --format esm --sourcemap --watch --onSuccess \"tsc -p tsconfig.json && cp src/styles.css dist/styles.css\"",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

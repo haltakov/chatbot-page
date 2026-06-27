@@ -3,9 +3,11 @@
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "build": "pnpm -r build",
-    "dev": "pnpm --filter chatbot-page build && pnpm --parallel --filter chatbot-page --filter example-next dev",
-    "typecheck": "pnpm --filter chatbot-page build && pnpm -r typecheck"
+    "build": "corepack pnpm@10.0.0 -r build",
+    "ci": "corepack pnpm@10.0.0 typecheck && corepack pnpm@10.0.0 release:check",
+    "dev": "corepack pnpm@10.0.0 --filter chatbot-page build && corepack pnpm@10.0.0 --parallel --filter chatbot-page --filter example-next dev",
+    "release:check": "cd packages/chatbot-page && npm pack --dry-run",
+    "typecheck": "corepack pnpm@10.0.0 --filter chatbot-page build && corepack pnpm@10.0.0 -r typecheck"
   },
   "devDependencies": {
     "@types/node": "^24",
