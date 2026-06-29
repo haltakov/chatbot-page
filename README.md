@@ -1,74 +1,36 @@
 # Chatbot Page
 
-Configurable chatbot-style pages for personal sites, company pages, and future LLM/RAG-backed Q&A.
+An open source tool for building a personal or company homepage that works like a chatbot.
 
-## Workspace
+Instead of a traditional portfolio that visitors scroll through, they ask questions and get answers. A live example is [haltakov.com](https://haltakov.com), deployed by [Vladimir Haltakov](https://github.com/haltakov).
+
+## What it does
+
+Answers can come from three sources, mixed however you like:
+
+- **Canned answers** — curated questions and answers written as Markdown files. Fast, free, and fully under your control.
+- **A real LLM** — unknown questions stream through an actual model (OpenAI Responses out of the box, or your own provider).
+- **A RAG vector store** — ground the model in your own documents so it answers from your real content instead of guessing.
+
+It also ships with optional visitor notifications (e.g. Telegram), a contact form, conversation history, and a first-launch intro modal.
+
+## Why it's useful
+
+- A homepage that feels like a conversation is more engaging than yet another static portfolio.
+- Start with canned answers only — no API keys, no cost — and add an LLM later when you want open-ended Q&A.
+- Connect a vector store and visitors can ask anything about you, your company, or your product, answered from your own material.
+
+Good for personal sites, company landing pages, product FAQs, and documentation front-ends.
+
+## Repository
 
 ```txt
-packages/chatbot-page   Reusable React package
-examples/next-app       Next.js example app
+packages/chatbot-page   The reusable React package — see its README
+examples/next-app       A working Next.js deployment — see its README
 ```
 
-## Development
+Read the [package README](packages/chatbot-page/README.md) to install and configure it in your own app, or the [example README](examples/next-app/README.md) to run a complete deployment locally.
 
-```bash
-pnpm install
-pnpm build
-pnpm dev
-```
+## License
 
-The example keeps the original canned-answer behavior for known questions. Unknown questions call `examples/next-app/app/api/chat/route.ts`, which now streams through the same API contract a real model and retrieval pipeline would use.
-
-## Publishing
-
-The package is published from `packages/chatbot-page` as `chatbot-page`.
-
-Publishing is handled by GitHub Actions with npm trusted publishing. The
-release workflow runs only for version tags:
-
-```bash
-corepack pnpm@10.0.0 install
-corepack pnpm@10.0.0 run ci
-
-# Update packages/chatbot-page/package.json first, then:
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Before using the workflow, configure npm trusted publishing for the package:
-
-- package: `chatbot-page`
-- repository: `haltakov/chatbot-page`
-- workflow: `publish.yml`
-- allowed action: `npm publish`
-
-For the first release of a brand-new package name, npm may require an initial
-manual publish or package setup before trusted publishing can be attached.
-After that, pushing `vX.Y.Z` tags is the normal release path.
-
-## Markdown Content
-
-Canned answers live as one Markdown file per question in `content/chatbot`.
-
-The first-launch modal can also be authored in Markdown:
-
-```md
----
-title: This personal site works like a conversation
-dismissLabel: Start chatting
----
-
-Instead of scrolling through a traditional portfolio, ask questions about the person, company, or product.
-
-- Suggested questions are curated entry points.
-- Answers can be written as simple Markdown files.
-- The same UI can later connect to an LLM and RAG backend.
-```
-
-Load it on the server and pass it into `ui.firstLaunch`:
-
-```ts
-import { loadFirstLaunchMarkdown } from "chatbot-page/server"
-
-const firstLaunch = await loadFirstLaunchMarkdown("content/first-launch.md")
-```
+MIT
