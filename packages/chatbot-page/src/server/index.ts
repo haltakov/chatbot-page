@@ -10,8 +10,6 @@ export type {
 export { ChatbotRequestError, createChatbotErrorResponse } from "./errors"
 export type { ReadChatbotRequestOptions } from "./request"
 export { readChatbotRequest } from "./request"
-export type { RateLimiter, RateLimiterOptions } from "./rate-limit"
-export { createRateLimiter, getClientIp } from "./rate-limit"
 export { createChatbotSseResponse, streamText } from "./sse"
 export type { LoadCannedAnswerDirectoryOptions, MarkdownCannedAnswerFrontmatter } from "./canned-markdown"
 export { loadCannedAnswerDirectory, parseCannedAnswerMarkdown } from "./canned-markdown"

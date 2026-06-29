@@ -1,6 +1,6 @@
 {
   "name": "chatbot-page",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A configurable chatbot-style page for personal sites, company pages, and LLM-backed Q&A.",
   "type": "module",
   "license": "MIT",

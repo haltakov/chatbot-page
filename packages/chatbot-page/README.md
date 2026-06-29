@@ -152,26 +152,22 @@ const modelProvider = {
 }
 ```
 
-## Rate limiting and input limits
+## Input limits and rate limiting
 
-`readChatbotRequest` caps message length and history size, and `createRateLimiter`
-provides a simple per-instance limiter. Both throw `ChatbotRequestError`, which
-`createChatbotErrorResponse` turns into the right status (`400`/`429`):
+`chatbot-page` validates request shape and input size, but it does not include
+rate limiting. `readChatbotRequest` caps message length and history size and
+throws `ChatbotRequestError` when a request is invalid. `createChatbotErrorResponse`
+turns those errors into the right status, such as `400`:
 
 ```ts
 import {
   createChatbotErrorResponse,
   createChatbotSseResponse,
-  createRateLimiter,
-  getClientIp,
   readChatbotRequest,
 } from "chatbot-page/server"
 
-const limiter = createRateLimiter({ limit: 20, windowMs: 60_000, maxKeys: 10_000 })
-
 export async function POST(request: Request) {
   try {
-    limiter.check(getClientIp(request))
     const chatRequest = await readChatbotRequest(request, { maxMessageLength: 4000 })
     return createChatbotSseResponse(modelProvider.streamAnswer(chatRequest))
   } catch (error) {
@@ -180,10 +176,12 @@ export async function POST(request: Request) {
 }
 ```
 
-The limiter keeps bounded state in memory, so it only protects a single
-instance. On serverless/multi-instance deployments, back it with a shared store
-(Redis, Upstash, etc.). `getClientIp` reads common proxy headers, so only use it
-when those headers are controlled by your deployment platform or trusted proxy.
+You should add rate limiting at the deployment or application boundary for any
+public site, especially for LLM-backed endpoints. Cloudflare, Vercel, a reverse
+proxy, or a shared-store limiter such as Redis/Upstash are all reasonable places
+to enforce this. Keeping it outside the package avoids shipping a per-instance
+limiter that would look production-ready but fail across serverless or
+multi-instance deployments.
 
 ## Notifications
 
