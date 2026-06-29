@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   ChatApp,
@@ -8,22 +8,22 @@ import {
   type CannedAnswerEntry,
   type ChatbotConfig,
   type ChatbotFirstLaunchConfig,
-} from "chatbot-page"
-import { introMessage, persona } from "@/lib/chatbot-base-config"
+} from "chatbot-page";
+import { introMessage, persona } from "@/lib/chatbot-base-config";
 
 const llmPlaceholderProvider = createApiAnswerProvider({
   endpoint: "/api/chat",
   stream: true,
-})
+});
 
 export function ExampleChatbot({
   cannedAnswers,
   firstLaunch,
 }: {
-  cannedAnswers: CannedAnswerEntry[]
-  firstLaunch: ChatbotFirstLaunchConfig
+  cannedAnswers: CannedAnswerEntry[];
+  firstLaunch: ChatbotFirstLaunchConfig;
 }) {
-  const canned = createCannedAnswerCollection(cannedAnswers)
+  const canned = createCannedAnswerCollection(cannedAnswers);
 
   const chatbotConfig: ChatbotConfig = {
     identity: {
@@ -57,11 +57,10 @@ export function ExampleChatbot({
         submitLabel: "Send",
         successTitle: "Thanks, I got it",
       },
-      disclaimer:
-        "Markdown answers are used first. Unknown questions stream from the LLM/RAG API route. Prompts can be sent to the optional notification endpoint.",
+      disclaimer: "Example Chatbot Page of Vladimir Haltakov.",
       firstLaunch,
     },
-  }
+  };
 
-  return <ChatApp config={chatbotConfig} />
+  return <ChatApp config={chatbotConfig} />;
 }

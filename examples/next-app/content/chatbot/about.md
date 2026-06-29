@@ -12,4 +12,4 @@ keywords:
 
 Vladimir Haltakov is an AI builder and computer vision engineer based in Munich.
 
-He has worked on autonomous driving and driver assistance at BMW, enterprise AI at Fr0ntierX, and now builds AI-powered products at Creafex Lab.
+He has worked on autonomous driving and driver assistance at BMW, enterprise AI and security at a starup, and now builds AI-powered products at Creafex Lab.

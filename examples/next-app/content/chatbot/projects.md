@@ -12,7 +12,7 @@ keywords:
 
 A few projects:
 
-- **Leoline** - an AI storyteller for kids
-- **Simple Photo Gallery** - story-driven photo galleries
-- **SimplePost** - a TypeScript library for social media publishing
-- **Chat with Vlad** - the chatbot idea this package grew out of
+- **[Simple Photo Gallery](https://simple.photo)** - story-driven photo galleries
+- **[SimplePost](https://simplepost.social)** - AI-native social media posting
+- **[Leoline](https://leoline.fun)** - an AI storyteller for kids
+- **[Chatbot Page](https://github.com/haltakov/chatbot-page)** - the chatbot idea this package grew out of

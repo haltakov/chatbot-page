@@ -4,8 +4,8 @@ import {
   createOpenAIResponsesProvider,
   readChatbotRequest,
   streamText,
-} from "chatbot-page/server"
-import { introMessage, persona } from "@/lib/chatbot-base-config"
+} from "chatbot-page/server";
+import { introMessage, persona } from "@/lib/chatbot-base-config";
 
 // Use the real OpenAI Responses provider when an API key is configured;
 // otherwise fall back to the streaming placeholder so the example runs as-is.
@@ -14,21 +14,21 @@ const modelProvider = process.env.OPENAI_API_KEY
       apiKey: process.env.OPENAI_API_KEY,
       organization: process.env.OPENAI_ORGANIZATION_ID,
       project: process.env.OPENAI_PROJECT_ID,
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
       instructions: `You are answering questions on ${persona.name}'s personal website. ${introMessage}\n\nBe concise, friendly, and only answer from what you know about ${persona.name}.`,
       vectorStoreIds: parseCsv(process.env.OPENAI_VECTOR_STORE_ID),
     })
-  : null
+  : null;
 
 export async function POST(request: Request) {
   try {
     const chatRequest = await readChatbotRequest(request, {
       maxMessageLength: 4000,
       maxMessages: 24,
-    })
+    });
 
     if (modelProvider) {
-      return createChatbotSseResponse(modelProvider.streamAnswer(chatRequest))
+      return createChatbotSseResponse(modelProvider.streamAnswer(chatRequest));
     }
 
     return createChatbotSseResponse(
@@ -37,18 +37,18 @@ export async function POST(request: Request) {
         {
           chunkSize: 24,
           delayMs: 20,
-        },
-      ),
-    )
+        }
+      )
+    );
   } catch (error) {
-    return createChatbotErrorResponse(error)
+    return createChatbotErrorResponse(error);
   }
 }
 
 function parseCsv(value: string | undefined): string[] {
-  if (!value) return []
+  if (!value) return [];
   return value
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }

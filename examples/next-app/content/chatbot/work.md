@@ -6,10 +6,10 @@ keywords:
   - ai
   - computer vision
   - bmw
-  - creafex
-  - fr0ntierx
+  - creafexlab
+  - web development
 ---
 
 Vladimir mostly works around AI products, computer vision, developer tools, and practical automation.
 
-His background includes semantic segmentation, camera-based perception, vehicle localization, and LLM/RAG applications.
+His background includes web app development, semantic segmentation, camera-based perception, vehicle localization, and LLM/RAG applications.
