@@ -23,8 +23,8 @@ The example keeps the original canned-answer behavior for known questions. Unkno
 
 The package is published from `packages/chatbot-page` as `chatbot-page`.
 
-Publishing is handled by GitHub Actions with npm trusted publishing and
-provenance. The release workflow runs only for version tags:
+Publishing is handled by GitHub Actions with npm trusted publishing. The
+release workflow runs only for version tags:
 
 ```bash
 corepack pnpm@10.0.0 install
