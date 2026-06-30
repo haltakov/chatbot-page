@@ -120,6 +120,7 @@ export type ChatbotUiConfig = {
   firstLaunch?: false | ChatbotFirstLaunchConfig
   newChatLabel?: string
   responseDelayMs?: number
+  suggestionCount?: number
   userLabel?: string
 }
 

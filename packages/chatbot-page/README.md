@@ -127,6 +127,8 @@ You can also pass any async function as `notifications` to send events to your o
 
 The `config` also supports a first-launch intro modal (`ui.firstLaunch`), a contact form (`ui.contact`), and pluggable storage (`storage`) — by default conversations, theme, and visitor id persist in `localStorage`. See the [example app](../../examples/next-app) for all of these wired together.
 
+Suggested questions are randomly chosen from `config.suggestions`. The UI shows `4` suggestions by default; set `ui.suggestionCount` to change the maximum number shown.
+
 ## License
 
 MIT

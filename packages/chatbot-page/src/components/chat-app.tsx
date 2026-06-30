@@ -62,6 +62,25 @@ function appendToMessage(messages: Message[], messageId: string, text: string): 
   )
 }
 
+function normalizeSuggestionCount(count: number): number {
+  if (!Number.isFinite(count)) return 0
+  return Math.max(0, Math.floor(count))
+}
+
+function pickRandomSuggestions<T>(items: T[], count: number): T[] {
+  const normalizedCount = normalizeSuggestionCount(count)
+  if (normalizedCount <= 0) return []
+  if (normalizedCount >= items.length) return items
+
+  const shuffled = [...items]
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  return shuffled.slice(0, normalizedCount)
+}
+
 export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const config = useMemo(() => resolveConfig(rawConfig), [rawConfig])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -367,10 +386,14 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
       config.suggestions.filter((s) => !askedQuestions.has(s.question.trim().toLowerCase())),
     [askedQuestions, config.suggestions],
   )
+  const visibleSuggestions = useMemo(
+    () => pickRandomSuggestions(remainingSuggestions, config.ui.suggestionCount),
+    [remainingSuggestions, config.ui.suggestionCount],
+  )
 
   const isIntroState = !!active && !active.messages.some((m) => m.role === "user")
   const showSuggestions =
-    !!active && !thinking && !animatingId && !streamingId && remainingSuggestions.length > 0
+    !!active && !thinking && !animatingId && !streamingId && visibleSuggestions.length > 0
 
   return (
     <div className="cp-root">
@@ -451,7 +474,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
                   </p>
                 )}
                 <div className="cp-suggestions-list">
-                  {remainingSuggestions.map((s) => (
+                  {visibleSuggestions.map((s) => (
                     <button
                       key={s.id}
                       type="button"

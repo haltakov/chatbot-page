@@ -12,6 +12,7 @@ const defaultUi = {
   emptyConversationsLabel: "No conversations yet. Start a new chat.",
   newChatLabel: "New chat",
   responseDelayMs: 280,
+  suggestionCount: 4,
   userLabel: "You",
 }
 
