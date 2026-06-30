@@ -9,7 +9,7 @@ import {
   type ChatbotConfig,
   type ChatbotFirstLaunchConfig,
 } from "chatbot-page";
-import { introMessage, persona } from "@/lib/chatbot-base-config";
+import { persona } from "@/lib/chatbot-base-config";
 
 const llmPlaceholderProvider = createApiAnswerProvider({
   endpoint: "/api/chat",
@@ -19,9 +19,11 @@ const llmPlaceholderProvider = createApiAnswerProvider({
 export function ExampleChatbot({
   cannedAnswers,
   firstLaunch,
+  introMessage,
 }: {
   cannedAnswers: CannedAnswerEntry[];
   firstLaunch: ChatbotFirstLaunchConfig;
+  introMessage: string;
 }) {
   const canned = createCannedAnswerCollection(cannedAnswers);
 

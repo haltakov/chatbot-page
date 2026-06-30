@@ -1,24 +1,13 @@
+import { join } from "node:path";
 import {
   createChatbotErrorResponse,
   createChatbotSseResponse,
   createOpenAIResponsesProvider,
+  loadMarkdownBody,
   readChatbotRequest,
   streamText,
 } from "chatbot-page/server";
-import { introMessage, persona } from "@/lib/chatbot-base-config";
-
-// Use the real OpenAI Responses provider when an API key is configured;
-// otherwise fall back to the streaming placeholder so the example runs as-is.
-const modelProvider = process.env.OPENAI_API_KEY
-  ? createOpenAIResponsesProvider({
-      apiKey: process.env.OPENAI_API_KEY,
-      organization: process.env.OPENAI_ORGANIZATION_ID,
-      project: process.env.OPENAI_PROJECT_ID,
-      model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
-      instructions: `You are answering questions on ${persona.name}'s personal website. ${introMessage}\n\nBe concise, friendly, and only answer from what you know about ${persona.name}.`,
-      vectorStoreIds: parseCsv(process.env.OPENAI_VECTOR_STORE_ID),
-    })
-  : null;
+import { persona } from "@/lib/chatbot-base-config";
 
 export async function POST(request: Request) {
   try {
@@ -26,6 +15,8 @@ export async function POST(request: Request) {
       maxMessageLength: 4000,
       maxMessages: 24,
     });
+
+    const modelProvider = await createModelProvider();
 
     if (modelProvider) {
       return createChatbotSseResponse(modelProvider.streamAnswer(chatRequest));
@@ -43,6 +34,21 @@ export async function POST(request: Request) {
   } catch (error) {
     return createChatbotErrorResponse(error);
   }
+}
+
+async function createModelProvider() {
+  if (!process.env.OPENAI_API_KEY) return null;
+
+  const introMessage = await loadMarkdownBody(join(process.cwd(), "content", "intro.md"));
+
+  return createOpenAIResponsesProvider({
+    apiKey: process.env.OPENAI_API_KEY,
+    organization: process.env.OPENAI_ORGANIZATION_ID,
+    project: process.env.OPENAI_PROJECT_ID,
+    model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+    instructions: `You are answering questions on ${persona.name}'s personal website. ${introMessage}\n\nBe concise, friendly, and only answer from what you know about ${persona.name}.`,
+    vectorStoreIds: parseCsv(process.env.OPENAI_VECTOR_STORE_ID),
+  });
 }
 
 function parseCsv(value: string | undefined): string[] {

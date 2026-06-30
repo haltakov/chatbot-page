@@ -15,6 +15,7 @@ export type { LoadCannedAnswerDirectoryOptions, MarkdownCannedAnswerFrontmatter 
 export { loadCannedAnswerDirectory, parseCannedAnswerMarkdown } from "./canned-markdown"
 export type { MarkdownFirstLaunchFrontmatter } from "./first-launch-markdown"
 export { loadFirstLaunchMarkdown, parseFirstLaunchMarkdown } from "./first-launch-markdown"
+export { loadMarkdownBody, parseMarkdownBody } from "./markdown-content"
 export type {
   ChatbotEventRequest,
   ChatbotServerNotificationEvent,

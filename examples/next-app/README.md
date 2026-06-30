@@ -28,14 +28,15 @@ Copy `.env.example` to `.env.local`:
 
 ```txt
 content/chatbot/*.md          Canned answers, one Markdown file per question
+content/intro.md              First assistant message shown in every new chat
 content/first-launch.md       Intro modal shown on first visit
-lib/chatbot-base-config.ts    Persona (name, title, handle) and intro message
+lib/chatbot-base-config.ts    Persona (name, title, handle)
 app/page.tsx                  Server component: loads Markdown, renders the chatbot
 app/chatbot.tsx               Client component: builds the ChatApp config
 app/api/chat/route.ts         LLM/RAG endpoint — OpenAI Responses, or a placeholder
 app/api/chatbot-events/route.ts   Notification endpoint — Telegram
 ```
 
-The flow: `page.tsx` loads the canned answers and first-launch content on the server and passes them to `chatbot.tsx`, which assembles the `ChatApp` config. Canned answers are tried first; anything unmatched is sent to `/api/chat`, which streams from OpenAI when a key is set and from a placeholder otherwise.
+The flow: `page.tsx` loads the intro message, canned answers, and first-launch content on the server and passes them to `chatbot.tsx`, which assembles the `ChatApp` config. Canned answers are tried first; anything unmatched is sent to `/api/chat`, which streams from OpenAI when a key is set and from a placeholder otherwise.
 
 To make it yours, edit the Markdown in `content/`, the persona in `lib/chatbot-base-config.ts`, and the system prompt in `app/api/chat/route.ts`.
