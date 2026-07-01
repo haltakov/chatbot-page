@@ -1,13 +1,6 @@
 ---
 id: projects
 question: What projects have you built?
-keywords:
-  - project
-  - projects
-  - leoline
-  - simplepost
-  - gallery
-  - chat
 ---
 
 A few projects:

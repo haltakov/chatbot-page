@@ -1,13 +1,6 @@
 ---
 id: contact
 question: How can I contact you?
-keywords:
-  - contact
-  - reach
-  - github
-  - linkedin
-  - twitter
-  - x
 ---
 
 You can find Vladimir online at:

@@ -1,13 +1,6 @@
 ---
 id: work
 question: What do you work on?
-keywords:
-  - work
-  - ai
-  - computer vision
-  - bmw
-  - creafexlab
-  - web development
 ---
 
 Vladimir mostly works around AI products, computer vision, developer tools, and practical automation.

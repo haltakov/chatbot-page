@@ -46,7 +46,6 @@ Write one Markdown file per question, with frontmatter for metadata:
 ---
 id: about
 question: Who is Vladimir Haltakov?
-keywords: [about, vladimir, background]
 ---
 
 Vladimir Haltakov is an AI builder and computer vision engineer based in Munich.
@@ -66,7 +65,7 @@ const canned = createCannedAnswerCollection(cannedAnswers);
 const answerProvider = createCannedAnswerProvider({ ...canned, fallbackProvider });
 ```
 
-By default canned answers are only used when a visitor clicks a suggested question; typed questions fall through to the fallback. Opt into matching typed input with `matchInput: true`.
+Canned answers are only used when a visitor clicks a suggested question; typed questions fall through to the fallback.
 
 ### LLM + RAG (OpenAI)
 

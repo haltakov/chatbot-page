@@ -3,7 +3,6 @@ import { basename, extname, join } from "node:path"
 import type { CannedAnswerEntry } from "../providers/canned"
 import {
   getFrontmatterString,
-  getFrontmatterStringList,
   splitMarkdownFrontmatter,
   type MarkdownFrontmatter,
 } from "./markdown"
@@ -48,7 +47,6 @@ export function parseCannedAnswerMarkdown(
     id,
     question,
     answer: body.trim(),
-    keywords: getFrontmatterStringList(frontmatter, "keywords"),
   }
 }
 

@@ -23,7 +23,6 @@ export type {
   CannedAnswerCollection,
   CannedAnswerEntry,
   CannedAnswerProviderOptions,
-  KeywordMatch,
 } from "./providers/canned"
 export type {
   BotAvatarProps,
