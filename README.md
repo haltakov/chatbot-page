@@ -2,7 +2,7 @@
 
 An open source tool for building a personal or company homepage that works like a chatbot.
 
-Instead of a traditional portfolio that visitors scroll through, they ask questions and get answers. A live example is [haltakov.com](https://haltakov.com), deployed by [Vladimir Haltakov](https://github.com/haltakov).
+Instead of a traditional portfolio that visitors scroll through, they ask questions and get answers. You can see a live exampe on my personal page [haltakov.com](https://haltakov.com).
 
 ## What it does
 
