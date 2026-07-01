@@ -82,7 +82,7 @@ import {
 const modelProvider = createOpenAIResponsesProvider({
   apiKey: process.env.OPENAI_API_KEY,
   model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
-  instructions: systemPrompt,
+  systemPromptPath: "content/system-prompt.md",
   vectorStoreIds: process.env.OPENAI_VECTOR_STORE_ID?.split(",").filter(Boolean),
 });
 
@@ -95,6 +95,18 @@ export async function POST(request: Request) {
   }
 }
 ```
+
+Put the editable prompt in `content/system-prompt.md`:
+
+```md
+You are answering questions on my personal website.
+
+- Be concise, friendly, and concrete.
+- Answer from the provided context when available.
+- If you do not know, say so plainly.
+```
+
+You can also pass `instructions` directly, or pass an async `instructions` function if your prompt comes from a CMS or database. Use either `systemPromptPath` or `instructions`, not both.
 
 To use a different model, implement `ChatbotModelProvider` and yield `text-delta` chunks. `readChatbotRequest` validates shape and input size — add rate limiting at your deployment boundary for public LLM-backed routes.
 

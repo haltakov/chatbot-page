@@ -1,4 +1,16 @@
-import type { ChatbotModelProvider, ChatbotServerAnswerChunk, ChatbotServerAnswerStream, ChatbotServerMessage } from "../types"
+import { isAbsolute, join } from "node:path"
+import type {
+  ChatbotModelProvider,
+  ChatbotServerAnswerChunk,
+  ChatbotServerAnswerStream,
+  ChatbotServerMessage,
+  ChatbotServerRequest,
+} from "../types"
+import { loadMarkdownBody } from "../markdown-content"
+
+export type OpenAIResponsesInstructions =
+  | string
+  | ((request: ChatbotServerRequest) => string | Promise<string>)
 
 export type OpenAIResponsesConnectorOptions = {
   apiKey?: string
@@ -6,7 +18,8 @@ export type OpenAIResponsesConnectorOptions = {
   project?: string
   baseUrl?: string
   model: string
-  instructions: string
+  instructions?: OpenAIResponsesInstructions
+  systemPromptPath?: string
   vectorStoreIds?: string[]
   tools?: unknown[]
   temperature?: number
@@ -26,6 +39,7 @@ export function createOpenAIResponsesProvider({
   baseUrl = "https://api.openai.com/v1",
   model,
   instructions,
+  systemPromptPath,
   vectorStoreIds = [],
   tools,
   temperature,
@@ -35,11 +49,21 @@ export function createOpenAIResponsesProvider({
   fetcher = fetch,
   extraBody,
 }: OpenAIResponsesProviderOptions): ChatbotModelProvider {
+  if (instructions && systemPromptPath) {
+    throw new Error("Pass either instructions or systemPromptPath, not both.")
+  }
+
   return {
     async streamAnswer(request) {
       if (!apiKey) {
         throw new Error("OPENAI_API_KEY is not configured.")
       }
+
+      const resolvedInstructions = await resolveInstructions({
+        instructions,
+        request,
+        systemPromptPath,
+      })
 
       const requestTools =
         tools ??
@@ -62,7 +86,7 @@ export function createOpenAIResponsesProvider({
         body: JSON.stringify(
           compactObject({
             model,
-            instructions,
+            instructions: resolvedInstructions,
             input: includeConversationHistory
               ? toOpenAIInput(request.messages, request.message, {
                   maxHistoryMessages,
@@ -94,6 +118,30 @@ export function createOpenAIResponsesProvider({
 }
 
 export const createOpenAIResponsesConnector = createOpenAIResponsesProvider
+
+async function resolveInstructions({
+  instructions,
+  request,
+  systemPromptPath,
+}: {
+  instructions?: OpenAIResponsesInstructions
+  request: ChatbotServerRequest
+  systemPromptPath?: string
+}): Promise<string | undefined> {
+  if (systemPromptPath) {
+    return loadMarkdownBody(resolvePath(systemPromptPath))
+  }
+
+  if (typeof instructions === "function") {
+    return instructions(request)
+  }
+
+  return instructions
+}
+
+function resolvePath(filePath: string): string {
+  return isAbsolute(filePath) ? filePath : join(process.cwd(), filePath)
+}
 
 function createOpenAIHeaders({
   apiKey,

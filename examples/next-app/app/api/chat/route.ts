@@ -1,13 +1,10 @@
-import { join } from "node:path";
 import {
   createChatbotErrorResponse,
   createChatbotSseResponse,
   createOpenAIResponsesProvider,
-  loadMarkdownBody,
   readChatbotRequest,
   streamText,
 } from "chatbot-page/server";
-import { persona } from "@/lib/chatbot-base-config";
 
 export async function POST(request: Request) {
   try {
@@ -39,14 +36,12 @@ export async function POST(request: Request) {
 async function createModelProvider() {
   if (!process.env.OPENAI_API_KEY) return null;
 
-  const introMessage = await loadMarkdownBody(join(process.cwd(), "content", "intro.md"));
-
   return createOpenAIResponsesProvider({
     apiKey: process.env.OPENAI_API_KEY,
     organization: process.env.OPENAI_ORGANIZATION_ID,
     project: process.env.OPENAI_PROJECT_ID,
     model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
-    instructions: `You are answering questions on ${persona.name}'s personal website. ${introMessage}\n\nBe concise, friendly, and only answer from what you know about ${persona.name}.`,
+    systemPromptPath: "content/system-prompt.md",
     vectorStoreIds: parseCsv(process.env.OPENAI_VECTOR_STORE_ID),
   });
 }

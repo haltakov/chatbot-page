@@ -23,6 +23,7 @@ export type {
 } from "./notifications"
 export { readChatbotEventRequest } from "./notifications"
 export type {
+  OpenAIResponsesInstructions,
   OpenAIResponsesConnectorOptions,
   OpenAIResponsesProviderOptions,
 } from "./model-providers/openai-responses"
