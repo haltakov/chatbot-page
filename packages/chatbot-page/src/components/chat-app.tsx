@@ -97,24 +97,51 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     const root = document.documentElement
     const body = document.body
 
-    function updateViewportHeight() {
-      const height = window.visualViewport?.height ?? window.innerHeight
+    let scrollFrame = 0
+
+    function keepWindowAtTop() {
+      if (window.scrollX === 0 && window.scrollY === 0) return
+      if (scrollFrame) return
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0
+        window.scrollTo(0, 0)
+      })
+    }
+
+    function updateViewportRect() {
+      const viewport = window.visualViewport
+      const height = viewport?.height ?? window.innerHeight
+      const width = viewport?.width ?? window.innerWidth
+      const offsetTop = viewport?.offsetTop ?? 0
+      const offsetLeft = viewport?.offsetLeft ?? 0
       root.style.setProperty("--cp-viewport-height", `${height}px`)
+      root.style.setProperty("--cp-viewport-width", `${width}px`)
+      root.style.setProperty("--cp-viewport-top", `${offsetTop}px`)
+      root.style.setProperty("--cp-viewport-left", `${offsetLeft}px`)
+      keepWindowAtTop()
     }
 
     root.classList.add("cp-chatbot-page")
     body.classList.add("cp-chatbot-page")
-    updateViewportHeight()
+    updateViewportRect()
 
-    window.addEventListener("resize", updateViewportHeight)
-    window.visualViewport?.addEventListener("resize", updateViewportHeight)
+    window.addEventListener("resize", updateViewportRect)
+    window.addEventListener("scroll", keepWindowAtTop)
+    window.visualViewport?.addEventListener("resize", updateViewportRect)
+    window.visualViewport?.addEventListener("scroll", updateViewportRect)
 
     return () => {
-      window.removeEventListener("resize", updateViewportHeight)
-      window.visualViewport?.removeEventListener("resize", updateViewportHeight)
+      window.removeEventListener("resize", updateViewportRect)
+      window.removeEventListener("scroll", keepWindowAtTop)
+      window.visualViewport?.removeEventListener("resize", updateViewportRect)
+      window.visualViewport?.removeEventListener("scroll", updateViewportRect)
+      if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
       root.classList.remove("cp-chatbot-page")
       body.classList.remove("cp-chatbot-page")
       root.style.removeProperty("--cp-viewport-height")
+      root.style.removeProperty("--cp-viewport-width")
+      root.style.removeProperty("--cp-viewport-top")
+      root.style.removeProperty("--cp-viewport-left")
     }
   }, [])
 

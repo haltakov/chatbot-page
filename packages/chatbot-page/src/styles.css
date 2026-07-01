@@ -111,6 +111,11 @@ body.cp-chatbot-page {
   overscroll-behavior: none;
 }
 
+body.cp-chatbot-page {
+  position: fixed;
+  inset: 0;
+}
+
 button,
 input,
 textarea {
@@ -129,9 +134,10 @@ textarea:disabled {
 
 .cp-root {
   position: fixed;
-  inset: 0;
+  top: var(--cp-viewport-top, 0);
+  left: var(--cp-viewport-left, 0);
   display: flex;
-  width: 100%;
+  width: var(--cp-viewport-width, 100%);
   height: var(--cp-viewport-height, 100dvh);
   max-height: var(--cp-viewport-height, 100dvh);
   min-height: 0;
