@@ -69,7 +69,7 @@ Canned answers are only used when a visitor clicks a suggested question; typed q
 
 ### LLM + RAG (OpenAI)
 
-In your `/api/chat` route, stream answers from the OpenAI Responses provider. Pass `vectorStoreIds` to enable RAG (file search over your documents):
+In your `/api/chat` route, stream answers from the OpenAI Responses provider. Put the system prompt in an editable Markdown file and point the provider at it with `systemPromptPath`. Pass `vectorStoreIds` to enable RAG (file search over your documents):
 
 ```ts
 import {
@@ -96,9 +96,13 @@ export async function POST(request: Request) {
 }
 ```
 
-Put the editable prompt in `content/system-prompt.md`:
+#### System Prompt
+
+The recommended setup is to keep the prompt outside your route code:
 
 ```md
+<!-- content/system-prompt.md -->
+
 You are answering questions on my personal website.
 
 - Be concise, friendly, and concrete.
@@ -106,7 +110,17 @@ You are answering questions on my personal website.
 - If you do not know, say so plainly.
 ```
 
-You can also pass `instructions` directly, or pass an async `instructions` function if your prompt comes from a CMS or database. Use either `systemPromptPath` or `instructions`, not both.
+Then configure the OpenAI provider with a path relative to your app root:
+
+```ts
+const modelProvider = createOpenAIResponsesProvider({
+  apiKey: process.env.OPENAI_API_KEY,
+  model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+  systemPromptPath: "content/system-prompt.md",
+});
+```
+
+`systemPromptPath` can also be an absolute path. If you prefer to keep the prompt somewhere else, pass `instructions` directly as a string, or pass an async `instructions(request)` function if your prompt comes from a CMS, database, or another runtime source. Use either `systemPromptPath` or `instructions`, not both.
 
 To use a different model, implement `ChatbotModelProvider` and yield `text-delta` chunks. `readChatbotRequest` validates shape and input size — add rate limiting at your deployment boundary for public LLM-backed routes.
 

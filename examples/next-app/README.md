@@ -41,3 +41,16 @@ app/api/chatbot-events/route.ts   Notification endpoint — Telegram
 The flow: `page.tsx` loads the intro message, canned answers, and first-launch content on the server and passes them to `chatbot.tsx`, which assembles the `ChatApp` config. Canned answers are tried first; anything unmatched is sent to `/api/chat`, which streams from OpenAI when a key is set and from a placeholder otherwise.
 
 To make it yours, edit the Markdown in `content/`, the persona in `lib/chatbot-base-config.ts`, and the LLM prompt in `content/system-prompt.md`.
+
+## System prompt
+
+The OpenAI route uses the library's editable-prompt convention:
+
+```ts
+createOpenAIResponsesProvider({
+  // ...
+  systemPromptPath: "content/system-prompt.md",
+});
+```
+
+Change `content/system-prompt.md` to control how the LLM answers fallback questions. Keep canned answers in `content/chatbot/*.md`; canned answers are only used when a visitor clicks a suggested question.
