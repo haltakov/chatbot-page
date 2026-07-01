@@ -92,13 +92,23 @@
 }
 
 html {
+  height: 100%;
   font-family: var(--cp-font-sans);
 }
 
 body {
+  min-height: 100%;
   margin: 0;
   background: var(--cp-background);
   color: var(--cp-foreground);
+}
+
+html.cp-chatbot-page,
+body.cp-chatbot-page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 button,
@@ -118,9 +128,16 @@ textarea:disabled {
 }
 
 .cp-root {
+  position: fixed;
+  inset: 0;
   display: flex;
-  height: 100dvh;
+  width: 100%;
+  height: var(--cp-viewport-height, 100dvh);
+  max-height: var(--cp-viewport-height, 100dvh);
+  min-height: 0;
   overflow: hidden;
+  overflow: clip;
+  overscroll-behavior: none;
   background: var(--cp-background);
   color: var(--cp-foreground);
   font-family: var(--cp-font-sans);
@@ -129,13 +146,17 @@ textarea:disabled {
 .cp-main {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex: 1;
   flex-direction: column;
+  overflow: hidden;
+  overflow: clip;
 }
 
 .cp-header {
   display: flex;
   height: 54px;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
   border-bottom: 0;
@@ -174,9 +195,12 @@ textarea:disabled {
 }
 
 .cp-scroll {
+  min-height: 0;
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cp-chat-container,
@@ -607,6 +631,7 @@ textarea:disabled {
 }
 
 .cp-composer-wrap {
+  flex: 0 0 auto;
   padding-bottom: 18px;
 }
 

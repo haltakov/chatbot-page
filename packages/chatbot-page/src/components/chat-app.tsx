@@ -93,6 +93,31 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
+  useEffect(() => {
+    const root = document.documentElement
+    const body = document.body
+
+    function updateViewportHeight() {
+      const height = window.visualViewport?.height ?? window.innerHeight
+      root.style.setProperty("--cp-viewport-height", `${height}px`)
+    }
+
+    root.classList.add("cp-chatbot-page")
+    body.classList.add("cp-chatbot-page")
+    updateViewportHeight()
+
+    window.addEventListener("resize", updateViewportHeight)
+    window.visualViewport?.addEventListener("resize", updateViewportHeight)
+
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight)
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight)
+      root.classList.remove("cp-chatbot-page")
+      body.classList.remove("cp-chatbot-page")
+      root.style.removeProperty("--cp-viewport-height")
+    }
+  }, [])
+
   // Load from storage (or seed a fresh intro chat) on mount.
   useEffect(() => {
     let cancelled = false
