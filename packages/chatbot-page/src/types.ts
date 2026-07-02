@@ -8,6 +8,8 @@ import type {
 import type {
   ChatbotAnswerChunk,
   ChatbotAnswerStream,
+  ChatbotLiveEvent,
+  ChatbotLiveMode,
   ChatbotNotificationEvent,
   ChatbotPromptSource,
 } from "./shared"
@@ -16,6 +18,8 @@ import type {
 export type {
   ChatbotAnswerChunk,
   ChatbotAnswerStream,
+  ChatbotLiveEvent,
+  ChatbotLiveMode,
   ChatbotNotificationEvent,
   ChatbotPromptSource,
 }
@@ -111,6 +115,13 @@ export type ChatbotNotificationConfig =
       provider?: ChatbotNotificationProvider
     }
 
+export type ChatbotLiveRepliesConfig =
+  | false
+  | {
+      enabled?: boolean
+      endpoint?: string
+    }
+
 export type ChatbotUiConfig = {
   askAgainLabel?: string
   composerPlaceholder?: string
@@ -139,6 +150,7 @@ export type ChatbotConfig = {
   suggestions?: ChatbotSuggestion[]
   answerProvider: ChatbotAnswerProvider
   components?: ChatbotComponentSlots
+  liveReplies?: ChatbotLiveRepliesConfig
   notifications?: ChatbotNotificationConfig
   storage?: ChatbotStorageConfig
   ui?: ChatbotUiConfig
@@ -146,9 +158,13 @@ export type ChatbotConfig = {
 
 export type ResolvedChatbotConfig = Omit<
   ChatbotConfig,
-  "components" | "notifications" | "storage" | "suggestions" | "ui"
+  "components" | "liveReplies" | "notifications" | "storage" | "suggestions" | "ui"
 > & {
   components: ChatbotComponentSlots
+  liveReplies: false | {
+    enabled: true
+    endpoint: string
+  }
   notifications: false | {
     enabled: true
     provider: ChatbotNotificationProvider

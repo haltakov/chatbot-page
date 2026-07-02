@@ -3,6 +3,7 @@ import {
   createTelegramNotifier,
   readChatbotEventRequest,
 } from "chatbot-page/server"
+import { chatbotLiveReplyStore } from "@/lib/chatbot-live-replies"
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +22,10 @@ export async function POST(request: Request) {
       botToken,
       chatId,
       siteName: "chatbot-page example",
+      liveReplies: {
+        store: chatbotLiveReplyStore,
+        authorName: "Real Vlad",
+      },
     })
 
     await notifier.send(event)

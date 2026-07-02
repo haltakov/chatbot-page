@@ -5,6 +5,7 @@ import {
   readChatbotRequest,
   streamText,
 } from "chatbot-page/server";
+import { chatbotLiveReplyStore } from "@/lib/chatbot-live-replies";
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,10 @@ export async function POST(request: Request) {
       maxMessageLength: 4000,
       maxMessages: 24,
     });
+
+    if (chatbotLiveReplyStore.isOperatorMode(chatRequest.conversationId)) {
+      return createChatbotSseResponse(streamOperatorModeMetadata());
+    }
 
     const modelProvider = await createModelProvider();
 
@@ -31,6 +36,13 @@ export async function POST(request: Request) {
   } catch (error) {
     return createChatbotErrorResponse(error);
   }
+}
+
+async function* streamOperatorModeMetadata() {
+  yield {
+    type: "metadata" as const,
+    liveMode: "operator",
+  };
 }
 
 async function createModelProvider() {

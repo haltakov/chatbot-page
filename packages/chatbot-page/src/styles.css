@@ -185,6 +185,30 @@ textarea:disabled {
   color: var(--cp-foreground);
 }
 
+.cp-message-author-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: var(--cp-muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cp-message-author-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cp-muted-foreground);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-muted-foreground) 16%, transparent);
+}
+
+.cp-message-author-badge--active::before {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgb(22 163 74 / 14%);
+}
+
 .cp-header-subtitle,
 .cp-sidebar-handle,
 .cp-suggestions-label,
@@ -545,35 +569,6 @@ textarea:disabled {
 .cp-message--assistant .cp-md-ol {
   margin-top: 12px;
   margin-bottom: 12px;
-}
-
-.cp-message-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 12px;
-  color: var(--cp-muted-foreground);
-}
-
-.cp-message-actions button,
-.cp-message-action {
-  display: inline-flex;
-  width: 30px;
-  height: 30px;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  opacity: 0.82;
-  transition: background 140ms ease, color 140ms ease, opacity 140ms ease;
-}
-
-.cp-message-actions button:hover {
-  background: var(--cp-accent);
-  color: var(--cp-accent-foreground);
-  opacity: 1;
 }
 
 .cp-typing-cursor {

@@ -1,13 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-  Copy,
-  MoreHorizontal,
-  RotateCcw,
-  ThumbsDown,
-  ThumbsUp,
-} from "lucide-react"
 import { Markdown } from "./markdown"
 import type { Message } from "../lib/chat-store"
 import type { ChatbotIdentity } from "../types"
@@ -21,15 +14,18 @@ export function ChatMessage({
   animate,
   identity,
   onAnimationComplete,
+  operatorActive = false,
   userLabel,
 }: {
   message: Message
   animate?: boolean
   identity: ChatbotIdentity
   onAnimationComplete?: () => void
+  operatorActive?: boolean
   userLabel: string
 }) {
   const isUser = message.role === "user"
+  const isOperator = message.source === "operator"
   const [revealed, setRevealed] = useState(animate ? "" : message.content)
   const doneRef = useRef(false)
 
@@ -57,10 +53,6 @@ export function ChatMessage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animate, message.content])
 
-  function copyMessage() {
-    void navigator.clipboard?.writeText(message.content)
-  }
-
   return (
     <div className={`cp-message ${isUser ? "cp-message--user" : "cp-message--assistant"}`}>
       <div className="cp-message-body">
@@ -71,31 +63,23 @@ export function ChatMessage({
           <p className="cp-message-text">{message.content}</p>
         ) : (
           <>
+            {isOperator && (
+              <div
+                className={`cp-message-author-badge ${
+                  operatorActive
+                    ? "cp-message-author-badge--active"
+                    : "cp-message-author-badge--inactive"
+                }`}
+              >
+                {message.authorName ?? identity.name}
+              </div>
+            )}
             <div className="cp-message-markdown">
               <Markdown>{revealed || "\u200b"}</Markdown>
               {animate && revealed.length < message.content.length && (
                 <span className="cp-typing-cursor" />
               )}
             </div>
-            {revealed.trim() && (
-              <div className="cp-message-actions" aria-label="Message actions">
-                <button type="button" onClick={copyMessage} aria-label="Copy answer">
-                  <Copy className="cp-icon cp-icon--sm" aria-hidden="true" />
-                </button>
-                <span className="cp-message-action" aria-hidden="true">
-                  <ThumbsUp className="cp-icon cp-icon--sm" aria-hidden="true" />
-                </span>
-                <span className="cp-message-action" aria-hidden="true">
-                  <ThumbsDown className="cp-icon cp-icon--sm" aria-hidden="true" />
-                </span>
-                <span className="cp-message-action" aria-hidden="true">
-                  <RotateCcw className="cp-icon cp-icon--sm" aria-hidden="true" />
-                </span>
-                <span className="cp-message-action" aria-hidden="true">
-                  <MoreHorizontal className="cp-icon cp-icon--sm" aria-hidden="true" />
-                </span>
-              </div>
-            )}
           </>
         )}
       </div>

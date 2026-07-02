@@ -25,6 +25,26 @@ export type ChatbotAnswerStream = AsyncIterable<ChatbotAnswerChunk>
 
 export type ChatbotPromptSource = "composer" | "suggestion"
 
+export type ChatbotLiveMode = "ai" | "operator"
+
+export type ChatbotLiveEvent =
+  | {
+      type: "operator-message"
+      conversationId: string
+      text: string
+      authorName: string
+      createdAt: string
+      source: "telegram"
+      telegramMessageId?: string
+      visitorId?: string
+    }
+  | {
+      type: "mode"
+      conversationId: string
+      mode: ChatbotLiveMode
+      createdAt: string
+    }
+
 export type ChatbotNotificationEvent =
   | {
       type: "prompt"

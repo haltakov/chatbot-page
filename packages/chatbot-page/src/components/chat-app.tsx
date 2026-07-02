@@ -13,12 +13,14 @@ import {
   deriveTitle,
   uid,
 } from "../lib/chat-store"
-import { sendChatbotNotification } from "../lib/notifications"
+import { getOrCreateVisitorId, sendChatbotNotification } from "../lib/notifications"
 import { resolveConfig } from "../defaults"
 import type {
   ChatbotAnswerChunk,
   ChatbotAnswerResult,
   ChatbotConfig,
+  ChatbotLiveEvent,
+  ChatbotLiveMode,
   ChatbotPromptSource,
 } from "../types"
 
@@ -26,8 +28,12 @@ import type {
 // answer is written once it settles instead of once per token.
 const SAVE_DEBOUNCE_MS = 400
 
-function makeMessage(role: Message["role"], content: string): Message {
-  return { id: uid(), role, content, createdAt: Date.now() }
+function makeMessage(
+  role: Message["role"],
+  content: string,
+  metadata: Pick<Message, "authorName" | "source"> = {},
+): Message {
+  return { id: uid(), role, content, createdAt: Date.now(), ...metadata }
 }
 
 function newChatWithIntro(introMessage: string): Conversation {
@@ -51,6 +57,15 @@ function chunkToText(chunk: ChatbotAnswerChunk): string {
   return ""
 }
 
+function isOperatorModeMetadata(chunk: ChatbotAnswerChunk): boolean {
+  return (
+    typeof chunk === "object" &&
+    chunk !== null &&
+    chunk.type === "metadata" &&
+    chunk.liveMode === "operator"
+  )
+}
+
 function appendToMessage(messages: Message[], messageId: string, text: string): Message[] {
   return messages.map((message) =>
     message.id === messageId
@@ -60,6 +75,10 @@ function appendToMessage(messages: Message[], messageId: string, text: string): 
         }
       : message,
   )
+}
+
+function removeMessage(messages: Message[], messageId: string): Message[] {
+  return messages.filter((message) => message.id !== messageId)
 }
 
 function normalizeSuggestionCount(count: number): number {
@@ -81,6 +100,64 @@ function pickRandomSuggestions<T>(items: T[], count: number): T[] {
   return shuffled.slice(0, normalizedCount)
 }
 
+function createLiveRepliesUrl(endpoint: string, conversationId: string, visitorId?: string): string {
+  const url = new URL(endpoint, window.location.href)
+  url.searchParams.set("conversationId", conversationId)
+  if (visitorId) url.searchParams.set("visitorId", visitorId)
+  return url.toString()
+}
+
+function parseLiveReplyEvent(event: MessageEvent): ChatbotLiveEvent | null {
+  try {
+    const payload = JSON.parse(event.data) as Record<string, unknown>
+    if (!payload || typeof payload !== "object") return null
+
+    if (
+      payload.type === "operator-message" &&
+      typeof payload.conversationId === "string" &&
+      typeof payload.text === "string" &&
+      typeof payload.authorName === "string"
+    ) {
+      return {
+        type: "operator-message",
+        conversationId: payload.conversationId,
+        text: payload.text,
+        authorName: payload.authorName,
+        createdAt:
+          typeof payload.createdAt === "string"
+            ? payload.createdAt
+            : new Date().toISOString(),
+        source: "telegram",
+        telegramMessageId:
+          typeof payload.telegramMessageId === "string"
+            ? payload.telegramMessageId
+            : undefined,
+        visitorId: typeof payload.visitorId === "string" ? payload.visitorId : undefined,
+      }
+    }
+
+    if (
+      payload.type === "mode" &&
+      typeof payload.conversationId === "string" &&
+      (payload.mode === "ai" || payload.mode === "operator")
+    ) {
+      return {
+        type: "mode",
+        conversationId: payload.conversationId,
+        mode: payload.mode,
+        createdAt:
+          typeof payload.createdAt === "string"
+            ? payload.createdAt
+            : new Date().toISOString(),
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
 export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const config = useMemo(() => resolveConfig(rawConfig), [rawConfig])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -90,8 +167,15 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const [thinking, setThinking] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [liveModes, setLiveModes] = useState<Record<string, ChatbotLiveMode>>({})
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const liveModesRef = useRef(liveModes)
+  const seenLiveRepliesRef = useRef(new Set<string>())
+
+  useEffect(() => {
+    liveModesRef.current = liveModes
+  }, [liveModes])
 
   useEffect(() => {
     const root = document.documentElement
@@ -221,11 +305,88 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     [],
   )
 
+  const updateLiveMode = useCallback((conversationId: string, mode: ChatbotLiveMode) => {
+    setLiveModes((prev) =>
+      prev[conversationId] === mode
+        ? prev
+        : {
+            ...prev,
+            [conversationId]: mode,
+          },
+    )
+  }, [])
+
   // Abort an in-flight answer (e.g. when the user moves to another chat).
   const cancelActiveAnswer = useCallback(() => {
     abortRef.current?.abort()
     abortRef.current = null
   }, [])
+
+  useEffect(() => {
+    if (!hydrated || !activeId || !config.liveReplies) return
+
+    const liveReplies = config.liveReplies
+    let cancelled = false
+    let events: EventSource | null = null
+
+    void (async () => {
+      const visitorId = await getOrCreateVisitorId(
+        config.storage.visitorIdKey,
+        config.storage.keyValueStore,
+      )
+      if (cancelled) return
+
+      events = new EventSource(
+        createLiveRepliesUrl(liveReplies.endpoint, activeId, visitorId),
+      )
+
+      events.addEventListener("mode", (event) => {
+        const payload = parseLiveReplyEvent(event)
+        if (!payload || payload.type !== "mode") return
+        updateLiveMode(payload.conversationId, payload.mode)
+      })
+
+      events.addEventListener("operator-message", (event) => {
+        const payload = parseLiveReplyEvent(event)
+        if (!payload || payload.type !== "operator-message") return
+        if (payload.conversationId !== activeId) return
+
+        const eventKey = `${payload.conversationId}:${payload.telegramMessageId ?? payload.createdAt}:${payload.text}`
+        if (seenLiveRepliesRef.current.has(eventKey)) return
+        seenLiveRepliesRef.current.add(eventKey)
+
+        cancelActiveAnswer()
+        setThinking(false)
+        setStreamingId(null)
+        updateLiveMode(payload.conversationId, "operator")
+
+        const message = makeMessage("assistant", payload.text, {
+          source: "operator",
+          authorName: payload.authorName,
+        })
+        updateConversation(payload.conversationId, (conversation) => ({
+          ...conversation,
+          messages: [...conversation.messages, message],
+          updatedAt: Date.now(),
+        }))
+        setAnimatingId(message.id)
+      })
+    })()
+
+    return () => {
+      cancelled = true
+      events?.close()
+    }
+  }, [
+    activeId,
+    cancelActiveAnswer,
+    config.liveReplies,
+    config.storage.keyValueStore,
+    config.storage.visitorIdKey,
+    hydrated,
+    updateConversation,
+    updateLiveMode,
+  ])
 
   const handleNewChat = useCallback(() => {
     cancelActiveAnswer()
@@ -253,6 +414,12 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
   const handleDelete = useCallback(
     (id: string) => {
       if (id === activeId) cancelActiveAnswer()
+      setLiveModes((prev) => {
+        if (!(id in prev)) return prev
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
       setConversations((prev) => {
         const next = prev.filter((c) => c.id !== id)
         if (id === activeId) {
@@ -284,8 +451,9 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
       const userMsg = makeMessage("user", text)
       const convoId = active.id
       const isFirstUserMessage = !active.messages.some((m) => m.role === "user")
-      const controller = new AbortController()
-      abortRef.current = controller
+      const isOperatorMode = liveModesRef.current[convoId] === "operator"
+      const controller = isOperatorMode ? null : new AbortController()
+      if (controller) abortRef.current = controller
 
       void sendChatbotNotification(config, {
         type: "prompt",
@@ -303,6 +471,9 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
         messages: [...c.messages, userMsg],
         updatedAt: Date.now(),
       }))
+
+      if (isOperatorMode) return
+      if (!controller) return
 
       setThinking(true)
       // Simulate an instant-but-perceptible response while still supporting async providers.
@@ -343,8 +514,14 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               setStreamingId(botMsg.id)
 
               let receivedText = false
+              let suppressedByOperatorMode = false
               for await (const chunk of answer.stream) {
                 if (controller.signal.aborted) return
+                if (isOperatorModeMetadata(chunk)) {
+                  suppressedByOperatorMode = true
+                  updateLiveMode(convoId, "operator")
+                  continue
+                }
                 const delta = chunkToText(chunk)
                 if (!delta) continue
                 receivedText = true
@@ -359,6 +536,15 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
               if (controller.signal.aborted) return
 
               if (!receivedText) {
+                if (suppressedByOperatorMode) {
+                  updateConversation(convoId, (c) => ({
+                    ...c,
+                    messages: removeMessage(c.messages, botMsg.id),
+                    updatedAt: Date.now(),
+                  }))
+                  return
+                }
+
                 updateConversation(convoId, (c) => ({
                   ...c,
                   messages: appendToMessage(
@@ -421,7 +607,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
         })()
       }, config.ui.responseDelayMs)
     },
-    [active, thinking, animatingId, streamingId, updateConversation, config],
+    [active, thinking, animatingId, streamingId, updateConversation, updateLiveMode, config],
   )
 
   // Keep showing suggestion chips, hiding any whose question has already been asked.
@@ -443,9 +629,15 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
     [remainingSuggestions, config.ui.suggestionCount],
   )
 
+  const activeLiveMode = active ? (liveModes[active.id] ?? "ai") : "ai"
   const isIntroState = !!active && !active.messages.some((m) => m.role === "user")
   const showSuggestions =
-    !!active && !thinking && !animatingId && !streamingId && visibleSuggestions.length > 0
+    !!active &&
+    activeLiveMode === "ai" &&
+    !thinking &&
+    !animatingId &&
+    !streamingId &&
+    visibleSuggestions.length > 0
 
   return (
     <div className="cp-root">
@@ -504,6 +696,7 @@ export function ChatApp({ config: rawConfig }: { config: ChatbotConfig }) {
                 message={m}
                 animate={m.id === animatingId}
                 onAnimationComplete={() => setAnimatingId(null)}
+                operatorActive={activeLiveMode === "operator"}
                 userLabel={config.ui.userLabel}
               />
             ))}

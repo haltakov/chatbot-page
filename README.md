@@ -12,7 +12,7 @@ Answers can come from three sources, mixed however you like:
 - **A real LLM** — unknown questions stream through an actual model (OpenAI Responses out of the box, or your own provider).
 - **A RAG vector store** — ground the model in your own documents so it answers from your real content instead of guessing.
 
-It also ships with optional visitor notifications (e.g. Telegram), a contact form, conversation history, and a first-launch intro modal.
+It also ships with optional visitor notifications, live Telegram replies for human takeover, a contact form, conversation history, and a first-launch intro modal.
 
 ## Why it's useful
 

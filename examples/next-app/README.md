@@ -23,6 +23,11 @@ Copy `.env.example` to `.env.local`:
 - `OPENAI_MODEL` — optional, defaults to `gpt-5.4-mini`.
 - `OPENAI_VECTOR_STORE_ID` — optional, comma-separated vector store IDs to enable RAG.
 - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` — optional, to receive chat and contact notifications.
+- `TELEGRAM_WEBHOOK_URL` — optional, full public URL for this app's `/api/telegram-webhook`; when present, the app registers it with Telegram on startup.
+- `TELEGRAM_WEBHOOK_SECRET` — optional but recommended, sent to Telegram as the webhook `secret_token`.
+- `TELEGRAM_ADMIN_USER_ID` — optional, locks Telegram operator replies to your Telegram user id.
+
+Telegram live replies are enabled in this example. Prompt notifications show the conversation id, then the visitor id in bold with their message; reply to that Telegram message to answer the visitor as `Real Vlad`. That conversation switches to human mode, so the next visitor messages notify Telegram but skip the AI route, and suggested questions are hidden. Reply `STOP` in Telegram to hand the conversation back to AI; the `Real Vlad` status dot turns gray after handoff.
 
 ## Main components
 
@@ -36,6 +41,10 @@ app/page.tsx                  Server component: loads Markdown, renders the chat
 app/chatbot.tsx               Client component: builds the ChatApp config
 app/api/chat/route.ts         LLM/RAG endpoint — OpenAI Responses, or a placeholder
 app/api/chatbot-events/route.ts   Notification endpoint — Telegram
+app/api/chatbot-live/route.ts     Browser SSE endpoint — live Telegram replies
+app/api/telegram-webhook/route.ts Telegram webhook endpoint — operator replies
+lib/chatbot-live-replies.ts       In-memory live reply store
+instrumentation.ts                Startup hook — registers the Telegram webhook
 ```
 
 The flow: `page.tsx` loads the intro message, canned answers, and first-launch content on the server and passes them to `chatbot.tsx`, which assembles the `ChatApp` config. Canned answers are tried first; anything unmatched is sent to `/api/chat`, which streams from OpenAI when a key is set and from a placeholder otherwise.

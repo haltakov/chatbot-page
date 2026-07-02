@@ -31,5 +31,27 @@ export {
   createOpenAIResponsesConnector,
   createOpenAIResponsesProvider,
 } from "./model-providers/openai-responses"
-export type { TelegramNotifier, TelegramNotifierOptions } from "./notifiers/telegram"
-export { createTelegramNotifier } from "./notifiers/telegram"
+export type {
+  TelegramNotifier,
+  TelegramNotifierOptions,
+  TelegramWebhookRegistrationOptions,
+  TelegramWebhookRegistrationResult,
+} from "./notifiers/telegram"
+export { createTelegramNotifier, registerTelegramWebhook } from "./notifiers/telegram"
+export type {
+  ChatbotLiveReplyStore,
+  ChatbotTelegramConversationLink,
+  CreateChatbotLiveReplySseResponseOptions,
+  CreateInMemoryChatbotLiveReplyStoreOptions,
+  HandleTelegramOperatorWebhookOptions,
+  PublishOperatorReplyInput,
+  RecordTelegramPromptMessageInput,
+  SetLiveModeInput,
+  SubscribeToLiveRepliesOptions,
+  TelegramOperatorWebhookResult,
+} from "./live-replies"
+export {
+  createChatbotLiveReplySseResponse,
+  createInMemoryChatbotLiveReplyStore,
+  handleTelegramOperatorWebhook,
+} from "./live-replies"

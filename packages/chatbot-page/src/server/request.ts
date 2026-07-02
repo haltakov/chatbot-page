@@ -41,6 +41,10 @@ export async function readChatbotRequest(
   return {
     message,
     messages: readMessages(payload.messages, maxMessages, maxMessageLength),
+    conversationId:
+      typeof payload.conversationId === "string" && payload.conversationId.trim()
+        ? payload.conversationId.trim()
+        : undefined,
     previousResponseId:
       typeof payload.previousResponseId === "string"
         ? payload.previousResponseId

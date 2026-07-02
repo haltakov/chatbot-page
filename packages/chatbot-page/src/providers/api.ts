@@ -23,6 +23,7 @@ export function createApiAnswerProvider({
       body: JSON.stringify({
         message: input,
         messages: context.messages,
+        conversationId: context.conversation.id,
       }),
       signal: context.signal,
     })

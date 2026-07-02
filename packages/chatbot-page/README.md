@@ -146,6 +146,79 @@ const notifier = createTelegramNotifier({
 await notifier.send(await readChatbotEventRequest(request));
 ```
 
+To let a real person reply from Telegram, keep the in-memory live reply store in a shared server module, enable `liveReplies` in the client config, and wire a Telegram webhook:
+
+```tsx
+const config = {
+  // ...
+  notifications: { enabled: true, endpoint: "/api/chatbot-events" },
+  liveReplies: { enabled: true, endpoint: "/api/chatbot-live" },
+};
+```
+
+```ts
+// lib/chatbot-live-replies.ts
+import { createInMemoryChatbotLiveReplyStore } from "chatbot-page/server";
+
+export const chatbotLiveReplyStore = createInMemoryChatbotLiveReplyStore();
+```
+
+```ts
+// app/api/chatbot-events/route.ts
+const notifier = createTelegramNotifier({
+  botToken: process.env.TELEGRAM_BOT_TOKEN,
+  chatId: process.env.TELEGRAM_CHAT_ID,
+  liveReplies: {
+    store: chatbotLiveReplyStore,
+    authorName: "Real Vlad",
+  },
+});
+await notifier.send(await readChatbotEventRequest(request));
+```
+
+```ts
+// app/api/chatbot-live/route.ts
+import { createChatbotLiveReplySseResponse } from "chatbot-page/server";
+
+export async function GET(request: Request) {
+  return createChatbotLiveReplySseResponse(request, chatbotLiveReplyStore);
+}
+```
+
+```ts
+// app/api/telegram-webhook/route.ts
+import { handleTelegramOperatorWebhook } from "chatbot-page/server";
+
+export async function POST(request: Request) {
+  const result = await handleTelegramOperatorWebhook(request, {
+    store: chatbotLiveReplyStore,
+    chatId: process.env.TELEGRAM_CHAT_ID!,
+    adminUserId: process.env.TELEGRAM_ADMIN_USER_ID,
+    secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+    authorName: "Real Vlad",
+  });
+
+  return Response.json(result);
+}
+```
+
+If your framework has a Node.js startup hook, you can register the Telegram webhook there instead of running `setWebhook` manually:
+
+```ts
+import { registerTelegramWebhook } from "chatbot-page/server";
+
+await registerTelegramWebhook({
+  botToken: process.env.TELEGRAM_BOT_TOKEN,
+  webhookUrl: process.env.TELEGRAM_WEBHOOK_URL,
+  secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+  allowedUpdates: ["message"],
+});
+```
+
+Some startup hooks, including Next.js instrumentation, may also run in an Edge bundle. In that case, avoid importing the full `chatbot-page/server` entry from the startup file; use a tiny `fetch` helper like the Next example app does.
+
+Prompt notifications use a compact reply-friendly format: the conversation id, a blank line, then the visitor id in bold followed by the prompt. Reply to that Telegram notification to publish a human message into the active browser chat over SSE. That conversation switches to operator mode, so subsequent visitor messages notify Telegram but do not call the AI provider; suggested questions are hidden while the operator is active. Reply `STOP` in Telegram to hand the conversation back to AI mode. Operator messages are labeled in the chat UI, with a green status dot while operator mode is active and a gray dot after handing back to AI. The default store is intentionally in-memory; use a durable store if you need multi-instance deployments or guaranteed delivery after restarts.
+
 You can also pass any async function as `notifications` to send events to your own webhook or analytics.
 
 ### Other options

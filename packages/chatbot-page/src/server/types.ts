@@ -10,6 +10,7 @@ export type ChatbotServerMessage = {
 export type ChatbotServerRequest = {
   message: string
   messages: ChatbotServerMessage[]
+  conversationId?: string
   previousResponseId?: string
 }
 

@@ -7,6 +7,8 @@ export type Message = {
   role: Role
   content: string
   createdAt: number
+  source?: "ai" | "operator"
+  authorName?: string
 }
 
 export type Conversation = {

@@ -47,6 +47,11 @@ const defaultNotifications = {
   endpoint: "/api/chatbot-events",
 }
 
+const defaultLiveReplies = {
+  enabled: true,
+  endpoint: "/api/chatbot-live",
+}
+
 export function resolveConfig(config: ChatbotConfig): ResolvedChatbotConfig {
   const keyValueStore = config.storage?.keyValueStore ?? createBrowserKeyValueStore()
   const conversationsKey =
@@ -81,10 +86,21 @@ export function resolveConfig(config: ChatbotConfig): ResolvedChatbotConfig {
                   endpoint: notificationConfig.endpoint ?? defaultNotifications.endpoint,
                 }),
         }
+  const liveRepliesConfig = config.liveReplies
+  const liveReplies =
+    liveRepliesConfig === undefined ||
+    liveRepliesConfig === false ||
+    liveRepliesConfig.enabled === false
+      ? false
+      : {
+          enabled: true as const,
+          endpoint: liveRepliesConfig.endpoint ?? defaultLiveReplies.endpoint,
+        }
 
   return {
     ...config,
     components: config.components ?? {},
+    liveReplies,
     notifications,
     storage: {
       conversationsKey,
